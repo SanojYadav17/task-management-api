@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskFlow Pro | Task Management System</title>
+    <!-- Tailwind CSS CDN for modern, responsive UI -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .badge-HIGH { background-color: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+        .badge-MEDIUM { background-color: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+        .badge-LOW { background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+        
+        .badge-PENDING { background-color: #f1f5f9; color: #475569; }
+        .badge-IN_PROGRESS { background-color: #e0e7ff; color: #4338ca; }
+        .badge-COMPLETED { background-color: #dcfce7; color: #15803d; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800 font-sans">
+
+    <!-- Top Navigation Bar -->
+    <header class="bg-indigo-700 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-list-check text-2xl text-amber-300"></i>
+                <span class="text-xl font-bold tracking-tight">TaskFlow Pro</span>
+                <span class="text-xs bg-indigo-900 text-indigo-200 px-2.5 py-0.5 rounded-full font-medium">Ikaansh Edutech</span>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <a href="/swagger-ui.html" target="_blank" class="text-xs bg-indigo-800 hover:bg-indigo-900 text-indigo-100 px-3 py-1.5 rounded-lg flex items-center space-x-1.5 transition">
+                    <i class="fa-solid fa-book-open"></i>
+                    <span>Swagger API</span>
+                </a>
+                <a href="/h2-console" target="_blank" class="text-xs bg-indigo-800 hover:bg-indigo-900 text-indigo-100 px-3 py-1.5 rounded-lg flex items-center space-x-1.5 transition">
+                    <i class="fa-solid fa-database"></i>
+                    <span>H2 DB</span>
+                </a>
+
+                <!-- User profile / Logout (Shown when authenticated) -->
+                <div id="authNav" class="hidden flex items-center space-x-3 pl-4 border-l border-indigo-600">
+                    <div class="text-right">
+                        <div id="navUsername" class="text-sm font-semibold leading-none">User</div>
+                        <div id="navRole" class="text-xs text-indigo-300">ROLE_USER</div>
+                    </div>
+                    <button onclick="logout()" class="p-2 text-indigo-200 hover:text-white hover:bg-indigo-800 rounded-lg transition" title="Logout">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- AUTH VIEW (Login & Register Cards) -->
+        <div id="authView" class="max-w-md mx-auto my-12">
+            <div class="bg-white rounded-2xl shadow-xl border border-slate-100 p-8">
+                <!-- Toggle Tabs -->
+                <div class="flex border-b border-slate-200 mb-6">
+                    <button id="tabLogin" onclick="switchAuthTab('login')" class="flex-1 pb-3 text-center font-semibold text-indigo-600 border-b-2 border-indigo-600">
+                        Sign In
+                    </button>
+                    <button id="tabRegister" onclick="switchAuthTab('register')" class="flex-1 pb-3 text-center font-medium text-slate-500 hover:text-indigo-600">
+                        Create Account
+                    </button>
+                </div>
+
+                <!-- Alert banner -->
+                <div id="authAlert" class="hidden mb-4 p-3 rounded-lg text-sm"></div>
+
+                <!-- Login Form -->
+                <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Username or Email</label>
+                        <input type="text" id="loginUsername" required placeholder="admin or testuser"
+                               class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Password</label>
+                        <input type="password" id="loginPassword" required placeholder="••••••••••••"
+                               class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                    </div>
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-lg shadow-sm transition">
+                        Sign In to TaskFlow
+                    </button>
+
+                    <div class="mt-4 p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs text-slate-600 space-y-1">
+                        <div class="font-semibold text-slate-700 mb-1">Default Pre-configured Credentials:</div>
+                        <div><strong class="text-indigo-600">Admin:</strong> admin / AdminPassword123!</div>
+                        <div><strong class="text-indigo-600">User:</strong> testuser / UserPassword123!</div>
+                    </div>
+                </form>
+
+                <!-- Register Form -->
+                <form id="registerForm" onsubmit="handleRegister(event)" class="space-y-4 hidden">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Username</label>
+                        <input type="text" id="regUsername" required minlength="3" placeholder="sanoj_yadav"
+                               class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Email</label>
+                        <input type="email" id="regEmail" required placeholder="sanoj@example.com"
+                               class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Password</label>
+                        <input type="password" id="regPassword" required minlength="6" placeholder="At least 6 characters"
+                               class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Account Role</label>
+                        <select id="regRole" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                            <option value="ROLE_USER">Standard User (ROLE_USER)</option>
+                            <option value="ROLE_ADMIN">Administrator (ROLE_ADMIN)</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-lg shadow-sm transition">
+                        Register Account
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- DASHBOARD VIEW (Shown when logged in) -->
+        <div id="dashboardView" class="hidden space-y-6">
+
+            <!-- Admin Stats Bar (Only shown for ROLE_ADMIN) -->
+            <div id="adminStatsPanel" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <div class="text-xs text-slate-500 font-semibold uppercase">Total Users</div>
+                        <div id="statTotalUsers" class="text-2xl font-bold text-slate-800 mt-1">0</div>
+                    </div>
+                    <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <div class="text-xs text-slate-500 font-semibold uppercase">Total Tasks</div>
+                        <div id="statTotalTasks" class="text-2xl font-bold text-slate-800 mt-1">0</div>
+                    </div>
+                    <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <div class="text-xs text-slate-500 font-semibold uppercase">Completed</div>
+                        <div id="statCompletedTasks" class="text-2xl font-bold text-emerald-600 mt-1">0</div>
+                    </div>
+                    <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-circle-check"></i>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <div class="text-xs text-slate-500 font-semibold uppercase">Pending Tasks</div>
+                        <div id="statPendingTasks" class="text-2xl font-bold text-amber-600 mt-1">0</div>
+                    </div>
+                    <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-lg flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-clock"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controls & Action Header -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="flex items-center space-x-3 w-full md:w-auto">
+                    <h1 class="text-xl font-bold text-slate-800">My Tasks</h1>
+                    <span id="taskCountBadge" class="bg-indigo-100 text-indigo-700 text-xs px-2.5 py-0.5 rounded-full font-semibold">0</span>
+                </div>
+
+                <!-- Search and Filters -->
+                <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                    <!-- Search input -->
+                    <div class="relative flex-1 sm:w-48">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-xs"></i>
+                        <input type="text" id="searchInput" placeholder="Search tasks..." oninput="debounceSearch()"
+                               class="w-full pl-8 pr-3 py-1.5 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    </div>
+
+                    <!-- Priority filter -->
+                    <select id="filterPriority" onchange="loadTasks()" class="px-3 py-1.5 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        <option value="">All Priorities</option>
+                        <option value="HIGH">High Priority</option>
+                        <option value="MEDIUM">Medium Priority</option>
+                        <option value="LOW">Low Priority</option>
+                    </select>
+
+                    <!-- Status filter -->
+                    <select id="filterStatus" onchange="loadTasks()" class="px-3 py-1.5 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        <option value="">All Statuses</option>
+                        <option value="PENDING">Pending</option>
+                        <option value="IN_PROGRESS">In Progress</option>
+                        <option value="COMPLETED">Completed</option>
+                    </select>
+
+                    <!-- Sort by -->
+                    <select id="sortBy" onchange="loadTasks()" class="px-3 py-1.5 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        <option value="createdAt-desc">Newest First</option>
+                        <option value="createdAt-asc">Oldest First</option>
+                        <option value="dueDate-asc">Due Date (Soonest)</option>
+                        <option value="priority-desc">Priority</option>
+                        <option value="title-asc">Title (A-Z)</option>
+                    </select>
+
+                    <!-- New Task Button -->
+                    <button onclick="openCreateModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center space-x-1.5 shadow transition">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>New Task</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Task List Table / Cards -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-200 text-sm">
+                        <thead class="bg-slate-50 text-slate-500 uppercase text-xs font-semibold">
+                            <tr>
+                                <th class="px-6 py-3 text-left w-12">Done</th>
+                                <th class="px-6 py-3 text-left">Task</th>
+                                <th class="px-6 py-3 text-left">Due Date</th>
+                                <th class="px-6 py-3 text-left">Priority</th>
+                                <th class="px-6 py-3 text-left">Status</th>
+                                <th class="px-6 py-3 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="taskTableBody" class="divide-y divide-slate-100">
+                            <!-- Injected via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Empty state -->
+                <div id="emptyState" class="hidden py-12 text-center text-slate-400">
+                    <i class="fa-solid fa-clipboard-check text-4xl mb-3 text-slate-300"></i>
+                    <p class="font-medium text-slate-600">No tasks found</p>
+                    <p class="text-xs text-slate-400 mt-1">Create your first task or change your filters</p>
+                </div>
+
+                <!-- Pagination footer -->
+                <div id="paginationFooter" class="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-600">
+                    <div>
+                        Showing <span id="pageStart" class="font-semibold text-slate-800">1</span> to <span id="pageEnd" class="font-semibold text-slate-800">10</span> of <span id="totalElements" class="font-semibold text-slate-800">0</span> tasks
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button id="btnPrevPage" onclick="changePage(-1)" class="px-3 py-1 rounded border border-slate-300 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed">
+                            Previous
+                        </button>
+                        <span id="pageIndicator" class="font-medium px-2">Page 1 of 1</span>
+                        <button id="btnNextPage" onclick="changePage(1)" class="px-3 py-1 rounded border border-slate-300 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed">
+                            Next
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Create / Edit Task Modal -->
+    <div id="taskModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <h3 id="modalTitle" class="text-lg font-bold text-slate-800">Create New Task</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form id="taskForm" onsubmit="handleSaveTask(event)" class="space-y-4 mt-4">
+                <input type="hidden" id="editTaskId">
+                
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Task Title *</label>
+                    <input type="text" id="taskTitle" required minlength="3" maxlength="150" placeholder="e.g. Implement Spring Security JWT"
+                           class="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Description</label>
+                    <textarea id="taskDescription" rows="3" placeholder="Add detailed instructions, checklist or notes..."
+                              class="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Priority</label>
+                        <select id="taskPriority" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                            <option value="LOW">Low</option>
+                            <option value="MEDIUM" selected>Medium</option>
+                            <option value="HIGH">High</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Status</label>
+                        <select id="taskStatus" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                            <option value="PENDING" selected>Pending</option>
+                            <option value="IN_PROGRESS">In Progress</option>
+                            <option value="COMPLETED">Completed</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Due Date & Time</label>
+                    <input type="datetime-local" id="taskDueDate"
+                           class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                </div>
+
+                <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-lg border border-slate-300 text-slate-600 text-sm hover:bg-slate-50 transition">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm shadow transition">
+                        Save Task
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Frontend Application Logic -->
+    <script>
+        const API_BASE = '/api';
+        let currentPage = 0;
+        let totalPages = 1;
+        let searchTimer = null;
+
+        // Session state
+        let currentUser = null;
+        let token = localStorage.getItem('task_jwt_token');
+
+        // Check active session on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            if (token) {
+                fetchCurrentUser();
+            } else {
+                showAuthView();
+            }
+        });
+
+        function switchAuthTab(tab) {
+            const isLogin = tab === 'login';
+            document.getElementById('loginForm').classList.toggle('hidden', !isLogin);
+            document.getElementById('registerForm').classList.toggle('hidden', isLogin);
+            
+            document.getElementById('tabLogin').className = isLogin 
+                ? 'flex-1 pb-3 text-center font-semibold text-indigo-600 border-b-2 border-indigo-600'
+                : 'flex-1 pb-3 text-center font-medium text-slate-500 hover:text-indigo-600';
+            
+            document.getElementById('tabRegister').className = !isLogin 
+                ? 'flex-1 pb-3 text-center font-semibold text-indigo-600 border-b-2 border-indigo-600'
+                : 'flex-1 pb-3 text-center font-medium text-slate-500 hover:text-indigo-600';
+            
+            hideAlert();
+        }
+
+        function showAlert(msg, isError = true) {
+            const el = document.getElementById('authAlert');
+            el.className = `mb-4 p-3 rounded-lg text-sm ${isError ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'}`;
+            el.innerText = msg;
+            el.classList.remove('hidden');
+        }
+
+        function hideAlert() {
+            document.getElementById('authAlert').classList.add('hidden');
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            hideAlert();
+            const usernameOrEmail = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                const res = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ usernameOrEmail, password })
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    token = data.data.token;
+                    localStorage.setItem('task_jwt_token', token);
+                    fetchCurrentUser();
+                } else {
+                    showAlert(data.message || 'Login failed. Check your credentials.');
+                }
+            } catch (err) {
+                showAlert('Network error connecting to API server.');
+            }
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            hideAlert();
+            const username = document.getElementById('regUsername').value;
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+            const role = document.getElementById('regRole').value;
+
+            try {
+                const res = await fetch(`${API_BASE}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, password, role })
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    token = data.data.token;
+                    localStorage.setItem('task_jwt_token', token);
+                    fetchCurrentUser();
+                } else {
+                    let msg = data.message || 'Registration failed.';
+                    if (data.validationErrors) {
+                        msg += ' (' + Object.values(data.validationErrors).join(', ') + ')';
+                    }
+                    showAlert(msg);
+                }
+            } catch (err) {
+                showAlert('Network error during registration.');
+            }
+        }
+
+        async function fetchCurrentUser() {
+            try {
+                const res = await fetch(`${API_BASE}/auth/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    currentUser = data.data;
+                    showDashboardView();
+                } else {
+                    logout();
+                }
+            } catch (err) {
+                logout();
+            }
+        }
+
+        function showDashboardView() {
+            document.getElementById('authView').classList.add('hidden');
+            document.getElementById('dashboardView').classList.remove('hidden');
+            document.getElementById('authNav').classList.remove('hidden');
+
+            document.getElementById('navUsername').innerText = currentUser.username;
+            document.getElementById('navRole').innerText = currentUser.role;
+
+            if (currentUser.role === 'ROLE_ADMIN') {
+                document.getElementById('adminStatsPanel').classList.remove('hidden');
+                loadAdminStats();
+            } else {
+                document.getElementById('adminStatsPanel').classList.add('hidden');
+            }
+
+            loadTasks();
+        }
+
+        function showAuthView() {
+            document.getElementById('authView').classList.remove('hidden');
+            document.getElementById('dashboardView').classList.add('hidden');
+            document.getElementById('authNav').classList.add('hidden');
+        }
+
+        function logout() {
+            token = null;
+            currentUser = null;
+            localStorage.removeItem('task_jwt_token');
+            showAuthView();
+        }
+
+        async function loadAdminStats() {
+            try {
+                const res = await fetch(`${API_BASE}/admin/stats`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    const s = data.data;
+                    document.getElementById('statTotalUsers').innerText = s.totalUsers;
+                    document.getElementById('statTotalTasks').innerText = s.totalTasks;
+                    document.getElementById('statCompletedTasks').innerText = s.completedTasks;
+                    document.getElementById('statPendingTasks').innerText = s.pendingTasks;
+                }
+            } catch (e) {
+                console.error('Failed to load admin stats', e);
+            }
+        }
+
+        function debounceSearch() {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => {
+                currentPage = 0;
+                loadTasks();
+            }, 300);
+        }
+
+        async function loadTasks() {
+            const priority = document.getElementById('filterPriority').value;
+            const status = document.getElementById('filterStatus').value;
+            const search = document.getElementById('searchInput').value;
+            const sortVal = document.getElementById('sortBy').value.split('-');
+            const sortBy = sortVal[0];
+            const sortDir = sortVal[1];
+
+            const params = new URLSearchParams({
+                page: currentPage,
+                size: 8,
+                sortBy: sortBy,
+                sortDir: sortDir
+            });
+            if (priority) params.append('priority', priority);
+            if (status) params.append('status', status);
+            if (search) params.append('search', search);
+
+            try {
+                const res = await fetch(`${API_BASE}/tasks?${params.toString()}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    renderTaskList(data.data);
+                }
+            } catch (e) {
+                console.error('Failed to fetch tasks', e);
+            }
+        }
+
+        function renderTaskList(paged) {
+            const tbody = document.getElementById('taskTableBody');
+            tbody.innerHTML = '';
+            totalPages = paged.totalPages || 1;
+
+            document.getElementById('taskCountBadge').innerText = paged.totalElements;
+            document.getElementById('totalElements').innerText = paged.totalElements;
+
+            if (!paged.content || paged.content.length === 0) {
+                document.getElementById('emptyState').classList.remove('hidden');
+                document.getElementById('paginationFooter').classList.add('hidden');
+                return;
+            }
+
+            document.getElementById('emptyState').classList.add('hidden');
+            document.getElementById('paginationFooter').classList.remove('hidden');
+
+            const startIdx = paged.pageNumber * paged.pageSize + 1;
+            const endIdx = Math.min((paged.pageNumber + 1) * paged.pageSize, paged.totalElements);
+            document.getElementById('pageStart').innerText = startIdx;
+            document.getElementById('pageEnd').innerText = endIdx;
+            document.getElementById('pageIndicator').innerText = `Page ${paged.pageNumber + 1} of ${totalPages}`;
+
+            document.getElementById('btnPrevPage').disabled = paged.isFirst;
+            document.getElementById('btnNextPage').disabled = paged.isLast;
+
+            paged.content.forEach(task => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50/80 transition';
+
+                const formattedDate = task.dueDate 
+                    ? new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) 
+                    : '<span class="text-slate-400">No due date</span>';
+
+                tr.innerHTML = `
+                    <td class="px-6 py-4">
+                        <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleComplete(${task.id})"
+                               class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 cursor-pointer">
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="font-medium ${task.completed ? 'line-through text-slate-400' : 'text-slate-800'}">${escapeHtml(task.title)}</div>
+                        ${task.description ? `<div class="text-xs text-slate-500 mt-0.5 line-clamp-1">${escapeHtml(task.description)}</div>` : ''}
+                    </td>
+                    <td class="px-6 py-4 text-xs text-slate-600">
+                        ${formattedDate}
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="text-xs px-2.5 py-0.5 rounded-full font-semibold badge-${task.priority}">
+                            ${task.priority}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="text-xs px-2.5 py-0.5 rounded-full font-medium badge-${task.status}">
+                            ${task.status.replace('_', ' ')}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-right space-x-2">
+                        <button onclick="openEditModal(${task.id})" class="text-slate-400 hover:text-indigo-600 transition" title="Edit Task">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </button>
+                        <button onclick="deleteTask(${task.id})" class="text-slate-400 hover:text-red-600 transition" title="Delete Task">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function changePage(delta) {
+            currentPage += delta;
+            loadTasks();
+        }
+
+        async function toggleComplete(id) {
+            try {
+                const res = await fetch(`${API_BASE}/tasks/${id}/toggle-complete`, {
+                    method: 'PATCH',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    loadTasks();
+                    if (currentUser && currentUser.role === 'ROLE_ADMIN') loadAdminStats();
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function deleteTask(id) {
+            if (!confirm('Are you sure you want to delete this task?')) return;
+            try {
+                const res = await fetch(`${API_BASE}/tasks/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    loadTasks();
+                    if (currentUser && currentUser.role === 'ROLE_ADMIN') loadAdminStats();
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function openCreateModal() {
+            document.getElementById('modalTitle').innerText = 'Create New Task';
+            document.getElementById('editTaskId').value = '';
+            document.getElementById('taskTitle').value = '';
+            document.getElementById('taskDescription').value = '';
+            document.getElementById('taskPriority').value = 'MEDIUM';
+            document.getElementById('taskStatus').value = 'PENDING';
+            document.getElementById('taskDueDate').value = '';
+            document.getElementById('taskModal').classList.remove('hidden');
+        }
+
+        async function openEditModal(id) {
+            try {
+                const res = await fetch(`${API_BASE}/tasks/${id}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    const task = data.data;
+                    document.getElementById('modalTitle').innerText = 'Edit Task';
+                    document.getElementById('editTaskId').value = task.id;
+                    document.getElementById('taskTitle').value = task.title;
+                    document.getElementById('taskDescription').value = task.description || '';
+                    document.getElementById('taskPriority').value = task.priority;
+                    document.getElementById('taskStatus').value = task.status;
+                    
+                    if (task.dueDate) {
+                        const d = new Date(task.dueDate);
+                        document.getElementById('taskDueDate').value = d.toISOString().slice(0, 16);
+                    } else {
+                        document.getElementById('taskDueDate').value = '';
+                    }
+
+                    document.getElementById('taskModal').classList.remove('hidden');
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('taskModal').classList.add('hidden');
+        }
+
+        async function handleSaveTask(e) {
+            e.preventDefault();
+            const editId = document.getElementById('editTaskId').value;
+            const title = document.getElementById('taskTitle').value;
+            const description = document.getElementById('taskDescription').value;
+            const priority = document.getElementById('taskPriority').value;
+            const status = document.getElementById('taskStatus').value;
+            const dueDateRaw = document.getElementById('taskDueDate').value;
+            const dueDate = dueDateRaw ? dueDateRaw + ':00' : null;
+
+            const payload = {
+                title,
+                description,
+                priority,
+                status,
+                dueDate
+            };
+
+            const url = editId ? `${API_BASE}/tasks/${editId}` : `${API_BASE}/tasks`;
+            const method = editId ? 'PUT' : 'POST';
+
+            try {
+                const res = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    closeModal();
+                    loadTasks();
+                    if (currentUser && currentUser.role === 'ROLE_ADMIN') loadAdminStats();
+                } else {
+                    alert(data.message || 'Error saving task');
+                }
+            } catch (err) {
+                alert('Network error while saving task');
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.innerText = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
+
