@@ -1,0 +1,42 @@
+server:
+  port: 8080
+  error:
+    include-message: always
+    include-binding-errors: always
+
+spring:
+  application:
+    name: task-management-api
+  profiles:
+    active: dev
+  jpa:
+    open-in-view: false
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+
+# Application Custom Configuration
+app:
+  jwt:
+    # 256-bit base64-encoded secret key
+    secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+    expiration-ms: 86400000 # 24 hours
+  admin:
+    default-username: admin
+    default-email: admin@ikaansh.com
+    default-password: AdminPassword123!
+  user:
+    default-username: testuser
+    default-email: user@ikaansh.com
+    default-password: UserPassword123!
+
+# Springdoc OpenAPI / Swagger UI
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: method
+
