@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Relational Database Service
+  postgres:
+    image: postgres:16-alpine
+    container_name: taskflow-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: task_management_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d task_management_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Spring Boot REST API Service
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: taskflow-backend-api
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: task_management_db
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgrespassword
+      APP_JWT_SECRET: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+      APP_JWT_EXPIRATION_MS: 86400000
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+    driver: local
+
